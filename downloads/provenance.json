@@ -1,0 +1,115 @@
+{
+  "classNames": {
+    "1": "Woodland",
+    "2": "Arable",
+    "3": "Improved Grassland",
+    "4": "Extensive Grassland",
+    "5": "Moorland",
+    "6": "Urban",
+    "7": "Other",
+    "8": "Snow",
+    "9": "Water"
+  },
+  "dashboard": {
+    "gridMaxPx": 1024,
+    "maxZoom": null,
+    "meshCap": 512,
+    "schema": 1,
+    "verticalExaggeration": 1.5
+  },
+  "generated": "2026-10-21T21:47:48+00:00",
+  "inputs": [
+    {
+      "crs": "NZGD2000 / New Zealand Transverse Mercator 2000",
+      "extent": [
+        1489839.0,
+        5140593.0,
+        1581606.0,
+        5202759.0
+      ],
+      "name": "SelwynWaihora_Lidar3m_2193_compressed",
+      "pixel": [
+        3.0,
+        3.0
+      ],
+      "role": "Digital elevation model",
+      "size": [
+        30589,
+        20722
+      ],
+      "source": "/Users/simreaney/ANZ/SCIMAPSet/SelwynWaihora_Lidar3m_2193_compressed.tif"
+    },
+    {
+      "name": "OUT_EROSION.tif",
+      "role": "Erosion risk",
+      "source": "/var/folders/4q/8sr2sf993fz1hpw5mfscbf600000gn/T/processing_bkgBtJ/f0c13ecb1df0404a98c280f0244b20d8/OUT_EROSION.tif"
+    },
+    {
+      "name": "OUT_CONNECTIVITY.tif",
+      "role": "Network connectivity",
+      "source": "/var/folders/4q/8sr2sf993fz1hpw5mfscbf600000gn/T/processing_bkgBtJ/99bc70cd5f7645aeb88643327d0ac6b2/OUT_CONNECTIVITY.tif"
+    }
+  ],
+  "layers": [
+    {
+      "key": "erosion",
+      "label": "Erosion risk",
+      "ramp": "magma",
+      "source": "OUT_EROSION.tif"
+    },
+    {
+      "key": "connectivity",
+      "label": "Network connectivity",
+      "ramp": "viridis",
+      "source": "OUT_CONNECTIVITY.tif"
+    }
+  ],
+  "organisation": "",
+  "plugin": {
+    "gdal": "3.13.3",
+    "name": "SCIMAP Toolkit",
+    "qgis": "4.2.3-Bel\u00e9m do Par\u00e1",
+    "version": "1.10.0"
+  },
+  "run": {
+    "algorithm": "scimap:scimapstandard",
+    "connectivityBackend": "SAGA-style flow-path trace with Numba parallel kernel",
+    "parameters": {
+      "COLOUR_RAMP": 0,
+      "CONNECTIVITY_METHOD": 0,
+      "INPUT_DEM": "SelwynWaihora_Lidar3m_2193_compressed (clipped)",
+      "INPUT_LC": "SW_ESA_LCM_3m (clipped)",
+      "INPUT_RAIN": "SW_Rainfall_3m (clipped)",
+      "LC_IS_PREWEIGHTED": false,
+      "LC_SCHEME": 4,
+      "SINK_TREATMENT": 2,
+      "STREAM_THRESHOLD": 800000.0,
+      "USE_STREAM_POWER": true
+    }
+  },
+  "subtitle": "",
+  "title": "Catchment",
+  "vectors": [
+    {
+      "key": "streams",
+      "label": "Stream network (in-channel risk)",
+      "source": "OUT_VECTOR_STREAM.gpkg"
+    },
+    {
+      "key": "catchment",
+      "label": "Catchment boundary",
+      "source": "OUT_CATCHMENT.gpkg"
+    }
+  ],
+  "weights": {
+    "1": 0.2,
+    "2": 1.0,
+    "3": 0.3,
+    "4": 0.15,
+    "5": 0.3,
+    "6": 0.5,
+    "7": 0.5,
+    "8": 0.5,
+    "9": 0.5
+  }
+}

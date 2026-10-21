@@ -1,1 +1,0 @@
-# SCIMAP_Selwyn_Waihora

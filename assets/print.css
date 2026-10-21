@@ -1,0 +1,70 @@
+/* SCIMAP dashboard — print / Save as PDF.
+ * The dashboard doubles as an evidence document, so printing produces a
+ * report: title block, the map as left on screen, legends, charts and the full
+ * provenance table. Interactive furniture is removed. */
+
+@page { margin: 14mm; }
+
+html, body { height: auto; overflow: visible; background: #fff; color: #16181c; }
+
+/* Force the light palette: the dark theme wastes ink and the inverted-chart
+   filter would print wrong. */
+:root {
+  --ink: #16181c; --ink-soft: #52514e; --ink-faint: #898781;
+  --bg: #ffffff; --panel: #ffffff; --panel-solid: #ffffff;
+  --edge: #e1e0d9; --edge-strong: #c3c2b7; --accent: #2a78d6; --shadow: none;
+  --driver-connectivity: #2a78d6; --driver-erosion: #eb6834; --driver-both: #1baf7a;
+}
+
+/* Swatches, bars and badges are backgrounds, which browsers drop from print
+   by default; without them the key and the scores lose their meaning. */
+.driver-swatch, .score-track, .score-bar, .area-rank {
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.table-scroll { overflow: visible; }
+.area-table tr { page-break-inside: avoid; }
+
+#loading, .tabs, #theme, #print, .rail-buttons, .opacity,
+#probe, #reach, #scene-building, #scene-unavailable,
+.leaflet-control-zoom, .leaflet-control-layers, .rail-note,
+.leaflet-control-attribution,
+#vector-list input, #layer-list input[type="checkbox"], .control input,
+#map-controls, .control select, .control-note { display: none !important; }
+
+#masthead {
+  display: block; height: auto; border-bottom: 2px solid #16181c;
+  padding: 0 0 8mm; margin-bottom: 6mm;
+}
+#title { font-size: 20pt; max-width: none; }
+#subtitle { font-size: 10pt; }
+.masthead-meta { display: block; margin-top: 3mm; font-size: 9pt; }
+.mark { display: none; }
+
+main { display: block; height: auto; }
+
+/* Every view prints, in reading order, not just the one on screen. */
+#rail {
+  width: 100%; border: 0; padding: 0; margin-bottom: 6mm;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm;
+}
+/* On screen the rail is a flex column that floats the active view's controls
+   to the top; on paper it is a plain grid in document order. */
+#rail > section { order: 0 !important; }
+#stage { position: static; }
+.view { position: static; display: block !important; page-break-before: always; padding: 0; }
+#view-map { page-break-before: avoid; }
+#view-scene { display: none !important; }   /* a live WebGL canvas prints unreliably */
+
+/* The live Leaflet map is replaced by a still composited from the embedded
+   data: a resized Leaflet requests its new tiles too late to be printed. */
+#map2d { display: none !important; }
+#print-map {
+  display: block; width: 100%; height: auto;
+  max-height: 150mm; object-fit: contain;
+  page-break-inside: avoid; border: 1px solid #e1e0d9;
+}
+.panel { max-width: none; border: 1px solid #e1e0d9; page-break-inside: avoid; margin-bottom: 5mm; }
+.layer { page-break-inside: avoid; }
+
+a { color: #16181c; text-decoration: none; }
+.download-table a::after { content: ""; }

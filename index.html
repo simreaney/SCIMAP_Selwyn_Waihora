@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catchment — SCIMAP</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14'>💧</text></svg>">
+<link rel="stylesheet" href="vendor/leaflet-1.9.4/leaflet.css">
+<link rel="stylesheet" href="assets/app.css">
+<link rel="stylesheet" href="assets/print.css" media="print">
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div><p>Preparing Catchment…</p></div>
+
+<header id="masthead">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <div>
+      <h1 id="title">Catchment</h1>
+      <p id="subtitle"></p>
+    </div>
+  </div>
+  <nav class="tabs" aria-label="Views">
+    <button data-view="map" class="on">Map</button>
+    <button data-view="scene">3D terrain</button>
+    <button data-view="charts">Analysis</button>
+    <button data-view="data">Data</button>
+    <button data-view="about">Provenance</button>
+  </nav>
+  <div class="masthead-meta">
+    <span id="organisation"></span>
+    <span id="generated"></span>
+    <button id="theme" class="ghost">Light</button>
+    <button id="print" class="ghost">Print</button>
+  </div>
+</header>
+
+<main>
+  <aside id="rail">
+    <section>
+      <h2>Result layers</h2>
+      <p class="control-note rail-note">Ticked layers and features show on both
+        the map and the 3D terrain. Where layers overlap, the one higher in the
+        list is drawn on top.</p>
+      <div id="layer-list"></div>
+    </section>
+
+    <section>
+      <h2>Features</h2>
+      <div id="vector-list"></div>
+    </section>
+
+    <section id="map-controls">
+      <h2>Map image</h2>
+      <div class="rail-buttons">
+        <button id="save-map-screen" class="ghost">Save image (screen)</button>
+        <button id="save-map-print" class="ghost">Save image (print)</button>
+      </div>
+      <p class="control-note" id="map-image-note"></p>
+    </section>
+
+    <section id="scene-controls">
+      <h2>Terrain</h2>
+      <label class="control">
+        <span>Vertical exaggeration <b id="exaggeration-value">1.5×</b></span>
+        <input type="range" id="exaggeration" min="1" max="6" step="0.1" value="1.5">
+      </label>
+      <label class="control">
+        <span>Sun direction <b id="sun-azimuth-value">315°</b></span>
+        <input type="range" id="sun-azimuth" min="0" max="360" step="5" value="315">
+      </label>
+      <label class="control">
+        <span>Sun height <b id="sun-altitude-value">45°</b></span>
+        <input type="range" id="sun-altitude" min="5" max="85" step="1" value="45">
+      </label>
+      <label class="check"><input type="checkbox" id="flow-toggle" checked>
+        <span>Animate flow</span></label>
+      <label class="check"><input type="checkbox" id="spin-toggle">
+        <span>Spin the view</span></label>
+      <label class="check"><input type="checkbox" id="pixelated-toggle">
+        <span>Show true pixels</span></label>
+      <p class="control-note">Flowing water is coloured by the in-channel risk
+        of the reach it runs along, on the same scale as the stream lines.</p>
+      <div class="rail-buttons">
+        <button id="reset-view" class="ghost">Reset view</button>
+        <button id="screenshot" class="ghost">Save image</button>
+      </div>
+      <label class="control">
+        <span>Printed size <b id="print-size-value">200 mm</b></span>
+        <input type="range" id="print-size" min="50" max="400" step="10" value="200">
+      </label>
+      <label class="control">
+        <span>3D model format</span>
+        <select id="model-format">
+          <option value="glb">glTF binary (.glb) — with the draped colours</option>
+          <option value="usdz">USDZ (.usdz) — AR on iPhone and iPad, with the draped colours</option>
+          <option value="stl">STL (.stl) — for 3D printing</option>
+          <option value="obj">OBJ (.obj) — shape only</option>
+        </select>
+      </label>
+      <div class="rail-buttons">
+        <button id="export-model" class="ghost">Save 3D model</button>
+      </div>
+      <p class="control-note" id="model-size-note">Open the 3D view to see the
+        printed dimensions.</p>
+      <p class="control-note" id="model-note">A closed solid — surface, sides
+        and a flat base — at the exaggeration you see, scaled to the printed
+        size above and standing on zero, so a slicer will take it as it is.</p>
+    </section>
+  </aside>
+
+  <div id="stage">
+    <section id="view-map" class="view on">
+      <div id="map2d"></div>
+      <!-- Printed instead of the live map: see renderStaticMap in scimap-map2d.js -->
+      <img id="print-map" alt="Map of the catchment showing the result layers">
+      <div id="probe" class="gone" aria-live="polite"></div>
+      <div id="reach" class="gone"></div>
+    </section>
+
+    <section id="view-scene" class="view">
+      <div id="scene3d"></div>
+      <div id="scene-building" class="scene-overlay gone">
+        <div class="spinner"></div><p>Building terrain…</p>
+      </div>
+      <div id="scene-unavailable" class="scene-overlay gone">
+        <p>This browser cannot show the 3D view — WebGL is unavailable.
+           The 2D map and the analysis charts work normally.</p>
+      </div>
+    </section>
+
+    <section id="view-charts" class="view scroll">
+      <div class="panel">
+        <h2>Where to act first</h2>
+        <p class="panel-note">The critical source areas: land where erosion risk
+          and connectivity to the river are both high, so material is both given
+          up and carried to the channel. Each area is a contiguous patch of the
+          catchment's top 5% of land by erosion risk × connectivity, largest
+          first, with the score that puts it there. Select one to find it on
+          the map.</p>
+        <div id="chart-priority"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Risk distribution</h2>
+          <select id="histogram-layer" aria-label="Layer for the distribution chart"></select>
+        </div>
+        <p class="panel-note">How cell values are spread across the catchment.
+          The shaded band is the 5th–95th percentile range the map colours use.</p>
+        <div id="chart-histogram"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Risk concentration across the catchment</h2>
+        <p class="panel-note">Every cell of the landscape ranked from lowest
+          risk to highest, against the share of total risk it carries. The
+          further the curve sags below the even-risk diagonal, the more a small
+          part of the catchment produces the risk — and the better targeting
+          works. Follows the layer chosen above.</p>
+        <div id="chart-concentration"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Wetness and connectivity</h2>
+        <p class="panel-note">Each point is a cell: its topographic wetness
+          index against its hydrological connectivity to the channel.</p>
+        <div id="chart-scatter"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Priority reaches</h2>
+        <p class="panel-note">The reaches carrying the highest in-channel risk
+          concentration. Select one to find it on the map.</p>
+        <div id="chart-reaches"></div>
+      </div>
+    </section>
+
+    <section id="view-data" class="view scroll">
+      <div class="panel">
+        <h2>Download the data</h2>
+        <p class="panel-note">Full-resolution results in their original projection, plus this dashboard's own derived files. Everything here is yours to reuse.</p>
+        <div id="download-list"></div>
+      </div>
+    </section>
+
+    <section id="view-about" class="view scroll">
+      <div class="panel">
+        <h2>How these results were produced</h2>
+        <div id="provenance"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="vendor/leaflet-1.9.4/leaflet.js"></script>
+<script src="vendor/three-r147/three.min.js"></script>
+<script src="vendor/three-r147/OrbitControls.js"></script>
+<script src="vendor/three-r147/lines/LineSegmentsGeometry.js"></script>
+<script src="vendor/three-r147/lines/LineSegments2.js"></script>
+<script src="vendor/three-r147/lines/LineGeometry.js"></script>
+<script src="vendor/three-r147/lines/Line2.js"></script>
+<script src="vendor/three-r147/lines/LineMaterial.js"></script>
+<script src="vendor/three-r147/exporters/GLTFExporter.js"></script>
+<script src="vendor/three-r147/exporters/STLExporter.js"></script>
+<script src="vendor/three-r147/exporters/OBJExporter.js"></script>
+<script src="vendor/tiny-inflate/tiny-inflate.js"></script>
+
+<script src="data/ramps.js"></script>
+<script src="data/meta.js"></script>
+<script src="data/grid.js"></script>
+<script src="data/layers.js"></script>
+<script src="data/layer_erosion.js"></script>
+<script src="data/layer_connectivity.js"></script>
+<script src="data/vectors.js"></script>
+<script src="data/charts.js"></script>
+
+<script src="assets/scimap-core.js"></script>
+<script src="assets/scimap-charts.js"></script>
+<script src="assets/scimap-map2d.js"></script>
+<script src="assets/scimap-usdz.js"></script>
+<script src="assets/scimap-map3d.js"></script>
+<script src="assets/scimap-ui.js"></script>
+</body>
+</html>
